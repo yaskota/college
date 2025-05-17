@@ -10,7 +10,7 @@ dotenv.config();
 
 
 
-export const addBranch =async(req,res)=>{
+export const branch =async(req,res)=>{
     const {branch}=req.body;
     if(!branch)
     {
@@ -29,7 +29,7 @@ export const addBranch =async(req,res)=>{
     return res.status(201).json({ message: 'Branch create succesfully' });
 }
 
-export const addRole =async(req,res)=>{
+export const role =async(req,res)=>{
     const {role}=req.body;
     if(!role)
     {
@@ -49,7 +49,7 @@ export const addRole =async(req,res)=>{
 }
 
 
-export const addPrincipal = async (req, res) => {
+export const principal = async (req, res) => {
   try {
     const { name, email } = req.body;
 
@@ -104,7 +104,7 @@ export const addPrincipal = async (req, res) => {
   }
 };
 
-export const addHod = async (req, res) => {
+export const hod = async (req, res) => {
   try {
     const { name, email } = req.body;
 
@@ -159,7 +159,7 @@ export const addHod = async (req, res) => {
   }
 };
 
-export const addFaculty = async (req, res) => {
+export const faculty = async (req, res) => {
   try {
     const { name, email } = req.body;
 
@@ -214,7 +214,7 @@ export const addFaculty = async (req, res) => {
   }
 };
 
-export const addStudent = async (req, res) => {
+export const student = async (req, res) => {
   try {
     const { name, email ,branch } = req.body;
 
@@ -273,6 +273,8 @@ export const addStudent = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
+
 
 
 

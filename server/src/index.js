@@ -1,10 +1,11 @@
 import express from 'express';
 import mongodb from '../config/db.js';
 import { config } from 'dotenv'
-import adminroute from '../routes/admin.route.js';
+import adminroute from '../routes/addUser.route.js';
 import authrouter from '../routes/auth.route.js';
 import cookieParser from 'cookie-parser'
 import cors from 'cors';
+import getUser from '../routes/getUser.route.js';
 
 config()
 const app = express();
@@ -22,8 +23,9 @@ app.use(cors(
       }
 ));
 
-app.use('/api/admin',adminroute);
+app.use('/api/add',adminroute);
 app.use('/api/auth',authrouter)
+app.use('/api/get',getUser)
 // Connect to MongoDB
 mongodb();
 
