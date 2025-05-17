@@ -10,12 +10,12 @@ export const login = async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    if (!user) return res.status(200).json({ message: "Invalid credentials" });
+    if (!user) return res.status(200).json({ message: "User not exist" });
 
     const isPassCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPassCorrect) {
-      return res.status(200).json({ message: "Invalid credentials" });
+      return res.status(200).json({ message: "Password incorrect" });
     }
 
     generateToken(user._id, res);
@@ -33,12 +33,14 @@ export const login = async (req, res) => {
 };
 
 export const logout = (req, res) => {
+    const cookieOptions={
+        maxAge:7*24*60*60*1000,
+        httpOnly:true,
+        sameSite:'strict',
+        secure:process.env.NODE_ENV!=="development"
+    }
   try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-    });
+    res.clearCookie("jwt", cookieOptions);
 
     return res.status(200).send({ message: "logout succesfully" });
   } catch (error) {
