@@ -1,21 +1,24 @@
 import mongoose from 'mongoose';
 
-const branchSchema = new mongoose.Schema({
-  
-  name: {
-    type: String,
-    required: true,
-    unique: true,
+const departmentSchema = new mongoose.Schema({
+  code: {
+    type:String,
+    require:true
   },
+  name:{
+    type:String,
+    require:true
+  } ,
   description: {
     type: String,
-    default: ''
+    default: '',
+    trim: true
   },
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  hod: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 });
 
-const Branch = mongoose.model('Branch', branchSchema);
-export default Branch;
+export default mongoose.model("Department", departmentSchema);

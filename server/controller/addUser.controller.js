@@ -49,6 +49,112 @@ export const role =async(req,res)=>{
 }
 
 
+
+export const addPerson = async(req,res)=>{
+
+
+    try {
+
+
+        const {user}=req;
+       
+        const { name, email, role } = req.body;
+
+        if (!name || !email || !role  ) {
+
+            return res.status(400).json({ message: 'Name, email, and password are required.' });
+        }
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+          return res.status(409).json({ message: 'User with this email already exists.' });
+        }
+
+        const userRole = await Role.findById(user.role);
+        if (!userRole) {
+          return res.status(404).json({ message: 'User role not exist.' });
+        }
+
+        const userPower = userRole.power;
+
+        if (!Number.isFinite(userPower) || userPower < 1 || userPower > 100) {
+          return res.status(400).json({ error: "User Power must be a number between 1 and 100" });
+        }
+
+        const personRole = await Role.findOne({ name: role });
+        console.log(personRole)
+        if (!personRole) {
+          return res.status(404).json({ message: 'Person role not exist.' });
+        }
+
+        const personPower = personRole.power;
+        const personBranch = personRole.branch;
+
+        console.log("person Branch : ",personBranch);
+
+        if (!Number.isFinite(personPower) || personPower < 1 || personPower > 100) {
+          return res.status(400).json({ error: "person Power must be a number between 1 and 100" });
+        }
+
+
+        //person eligible la
+
+        if(userPower<personPower)
+        {
+            return res.status(400).json({ message: 'You not Elegible to add the Person.' });
+        }
+
+        console.log("msg : ",userPower,personPower,typeof(userPower),typeof(personPower))
+
+
+
+        // createing a user
+
+        const password = String(Math.floor(100000+(Math.random()*900000)))
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = new User({
+          name,
+          email,
+          password: hashedPassword,
+          role: personRole._id
+        });
+
+        await newUser.save();
+
+
+
+
+        // mail send cheye
+
+        const mailOptions = {
+            from: process.env.NODE_MAIL_EMAIL, 
+            to: email,
+            subject: "Welcome to Our Platform!",
+            html: firstPasswordTemp(name,email,password) 
+        };
+
+        await transporter.sendMail(mailOptions);
+
+
+
+
+        // reponse send cheye
+
+        return res.status(200).json({message:newUser})
+      
+    } catch (error) {
+      
+    }
+
+
+
+
+
+
+}
+
 export const principal = async (req, res) => {
   try {
     const { name, email } = req.body;
@@ -106,9 +212,9 @@ export const principal = async (req, res) => {
 
 export const hod = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email,branch } = req.body;
 
-    if (!name || !email ) {
+    if (!name || !email || !branch) {
       return res.status(400).json({ message: 'Name, email, and password are required.' });
     }
 
@@ -122,7 +228,11 @@ export const hod = async (req, res) => {
     if (!HodRole) {
       return res.status(404).json({ message: 'hod role not exist.' });
     }
-
+    const studentBranch=await Branch.findOne({name:branch})
+    if(!studentBranch)
+    {
+        return res.status(404).json({ message: 'branch not exist.' });
+    }
     // 2. Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -138,7 +248,7 @@ export const hod = async (req, res) => {
       email,
       password: hashedPassword,
       role: HodRole._id,
-      branch: null  // or just omit it
+      branch :studentBranch._id // or just omit it
     });
 
     await newUser.save();
@@ -161,21 +271,24 @@ export const hod = async (req, res) => {
 
 export const faculty = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email,branch } = req.body;
 
-    if (!name || !email ) {
+    if (!name || !email || !branch ) {
       return res.status(400).json({ message: 'Name, email, and password are required.' });
     }
 
     const password = String(Math.floor(100000+(Math.random()*900000)))
 
-
-        
-
     // 1. Get Role ID for Principal
     const facultyRole = await Role.findOne({ name: 'faculty' });
     if (!facultyRole) {
       return res.status(404).json({ message: 'faculty role not exist.' });
+    }
+
+    const studentBranch=await Branch.findOne({name:branch})
+    if(!studentBranch)
+    {
+        return res.status(404).json({ message: 'branch not exist.' });
     }
 
     // 2. Check if user already exists
@@ -193,7 +306,7 @@ export const faculty = async (req, res) => {
       email,
       password: hashedPassword,
       role: facultyRole._id,
-      branch: null  // or just omit it
+      branch :studentBranch._id  // or just omit it
     });
 
     await newUser.save();
@@ -236,7 +349,7 @@ export const student = async (req, res) => {
     const studentBranch=await Branch.findOne({name:branch})
     if(!studentBranch)
     {
-        return res.status(404).json({ message: 'student branch not exist.' });
+        return res.status(404).json({ message: 'branch not exist.' });
     }
     // 2. Check if user already exists
     const existingUser = await User.findOne({ email });

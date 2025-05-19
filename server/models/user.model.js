@@ -1,36 +1,31 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
-    
+    require: true,
   },
   email: {
     type: String,
-    required: true,
-    unique: true,
-   
+    require: true,
   },
   password: {
     type: String,
-    required: true
+    require: true,
   },
   role: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Role',
-    required: true
+    ref: "Role",
   },
-  branch: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Branch',
-    required: false
-  },
-  createdAt: {
+  joiningYear: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
+  department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  additionalInfo: mongoose.Schema.Types.Mixed,
+  active: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
 });
 
-const User = mongoose.model('User', userSchema);
-export default User;
+export default mongoose.model("User", userSchema);

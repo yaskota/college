@@ -1,6 +1,7 @@
 import { generateToken } from "../config/jwtToken.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
+import verifyOtpTemp from "../utils/verifyOtpTemp.js";
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
@@ -58,32 +59,28 @@ export const checkAuth = (req, res) => {
 }
 
 export const sendOtp= async(req,res)=>{
-    const userId = req.user._id;
-    const email = req.user.email;
+    const{email}=req.body;
     try {
        
-        if(!userId || !email)
-        return res.status(200).json({message:"Unauthorized - No Token Provided"});
+        if(!email)
+        return res.status(200).json({message:"Missing Deatils"});
 
-        const user = await User.findOne({email})
+        const userData = await User.findOne({email})
 
-        if(!user) return res.status(200).json({message:"Invalid credentials"});
-
-        if(user.isVerified){
-            return res.status(200).json({message:"Your Account Already Verified"});
-        }
+        if(!userData) return res.status(200).json({message:"Invalid Data"});
 
         const otp = String(Math.floor(100000+(Math.random()*900000)))
 
-        user.veficationOtp=otp;
-        user.veficationOtpExpiresAt=Date.now()+2*60*1000;
-        await user.save();
+        userData.otp=otp;
+        userData.otpExpiry=Date.now()+2*60*1000;
+
+        await userData.save();
 
         const mailOptions = {
             from: process.env.NODE_MAIL_EMAIL, 
             to: email,
             subject: "Welcome to Our Platform!",
-            html: verifyOtpTemp(user.name,email,otp) 
+            html: verifyOtpTemp(User.name,email,otp) 
         };
 
         await transporter.sendMail(mailOptions);
@@ -95,43 +92,43 @@ export const sendOtp= async(req,res)=>{
         res.status(500).json({message:"Internal Server Error"})
     }
 }
-export const verifyEmail= async(req,res)=>{
-    const userId = req.user._id;
-    const {otp} = req.body;
+export const passwordReset= async(req,res)=>{
+    
+    const {email,otp,password} = req.body;
+    
     try {
        
-        if(!userId)
+        if(!email || !otp || !password)
         {
-            console.log(userId,otp)
-            return res.status(200).json({message:"Unauthorized User"});
+            console.log(otp)
+            return res.status(200).json({message:"Missing Details"});
         }
 
-        const user = await User.findById(userId)
+        const userData = await User.findOne({email})
 
-        if(!user) return res.status(200).json({message:"Invalid credentials"});
+        if(!userData) return res.status(200).json({message:"user not present"});
 
-        // if(user.isVerified){
-        //     return res.status(200).json({message:"Your Account Already Verified"});
-        // }
+        
 
-        if(user.veficationOtp === "" || user.veficationOtp !== otp){
+        if(otp === "" || userData.otp !== otp){
             return res.status(200).json({message:"Invalid Otp"});
         }
 
-        if(user.veficationOtpExpiresAt < Date.now()){
+        if(userData.otpExpiry < Date.now()){
 
-            console.log("user.veficationOtpExpiresAt : ",user.veficationOtpExpiresAt,"Date.now() : ",Date.now())
+           
             return res.status(200).json({message:"Otp Expired"});
         }
 
-        user.isVerified=true;
-        user.veficationOtp="";
-        user.veficationOtpExpiresAt=0;
-        await user.save(); 
-        res.status(201).json({message:"Your Email Verified Sucessfully"})
+        const hashedPassword = await bcrypt.hash(password, 10);
+        userData.otp="";
+        userData.otpExpiry=0;
+        userData.password=hashedPassword;
+        await userData.save(); 
+        res.status(201).json({message:"Password reset Sucessfully"})
 
     } catch (error) {
-        console.log("Error in login controller",error.message);
+        console.log("Error in rest password controller",error.message);
         res.status(500).json({message:"Internal Server Error"})
     }
 }

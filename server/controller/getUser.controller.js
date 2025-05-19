@@ -1,6 +1,7 @@
 import express from 'express';
 import Role from '../models/role.model.js';
 import User from '../models/user.model.js';
+import Branch from '../models/branch.model.js';
 
 /**
  * GET /roles - Fetch all available roles
@@ -29,7 +30,6 @@ export const getGroupedUsersByRole = async () => {
         const roles = await Role.find();
         const groupedUsers = {};
 
-        // Group users by their role
         for (const role of roles) {
             const users = await User.find({ role: role._id })
                 .populate("role")
@@ -38,9 +38,7 @@ export const getGroupedUsersByRole = async () => {
             groupedUsers[role.name.toLowerCase()] = users;
         }
 
-        // Find users without a valid role
         const unassignedUsers = await User.find({ role: { $exists: false } }).select("-password");
-
         if (unassignedUsers.length) {
             groupedUsers["unknown"] = unassignedUsers;
         }
@@ -52,6 +50,9 @@ export const getGroupedUsersByRole = async () => {
     }
 };
 
+/**
+ * GET /user-data - Get filtered users based on requester's role and branch
+ */
 export const getUserData = async (req, res) => {
     const { user } = req;
 
@@ -61,7 +62,14 @@ export const getUserData = async (req, res) => {
             return res.status(404).json({ message: "Role not found" });
         }
 
+        const branchDoc = await Branch.findById(user.branch); // ✅ Fixed here
+        if (!branchDoc) {
+            return res.status(404).json({ message: "Branch not found" });
+        }
+
         const role = roleDoc.name.toLowerCase();
+        const userBranch = branchDoc.name.toLowerCase();
+
         const allGroupedUsers = await getGroupedUsersByRole();
 
         let filteredData = {};
@@ -71,9 +79,9 @@ export const getUserData = async (req, res) => {
         } else if (role === "principal") {
             filteredData = pickRoles(allGroupedUsers, ["principal", "hod", "faculty", "student"]);
         } else if (role === "hod") {
-            filteredData = pickRoles(allGroupedUsers, ["hod", "faculty", "student"]);
+            filteredData = filterByBranch(allGroupedUsers, ["hod", "faculty", "student"], userBranch);
         } else if (role === "faculty") {
-            filteredData = pickRoles(allGroupedUsers, ["faculty","student"]);
+            filteredData = filterByBranch(allGroupedUsers, ["faculty","student"], userBranch);
         } else {
             return res.status(403).json({ message: "Unauthorized to access this data" });
         }
@@ -85,12 +93,23 @@ export const getUserData = async (req, res) => {
     }
 };
 
-
+// Pick roles without filtering by branch
 const pickRoles = (data, roles) => {
     const result = {};
     for (const role of roles) {
         if (data[role]) {
             result[role] = data[role];
+        }
+    }
+    return result;
+};
+
+// Filter users by their branch
+const filterByBranch = (data, roles, branch) => {
+    const result = {};
+    for (const role of roles) {
+        if (data[role]) {
+            result[role] = data[role].filter(user => user.branch?.toLowerCase() === branch);
         }
     }
     return result;
