@@ -1,10 +1,10 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const roleSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
+    uniqure: true,
     trim: true,
     lowercase: true
   },
@@ -17,17 +17,8 @@ const roleSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  canAdd: {
-  type: Array,         // or: type: [Schema.Types.Mixed]
-  required: true,
-  validate: {
-    validator: function(arr) {
-      return arr.length >= 1 && arr.length <= 100;
-    },
-    message: 'canAdd must have between 1 and 100 items.'
-  }
-}
-,
+  canAdd: [{type: Schema.Types.ObjectId,ref:'Role'}],
+  canView: [{type: Schema.Types.ObjectId,ref:'Role'}],
   hasDepartment:{
     type: Boolean,
     required: true,
